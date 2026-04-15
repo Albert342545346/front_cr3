@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Мои Заметки</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+        }
+        .container {
+            max-width: 700px;
+            margin: 0 auto;
+            background: rgba(255,255,255,0.95);
+            border-radius: 24px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            margin: 0 0 10px 0;
+            color: #333;
+            font-size: 28px;
+        }
+        h2 {
+            color: #555;
+            font-size: 18px;
+            margin: 0 0 20px 0;
+            font-weight: normal;
+            border-bottom: 2px solid #667eea;
+            display: inline-block;
+            padding-bottom: 5px;
+        }
+        h3 {
+            color: #555;
+            margin: 20px 0 10px 0;
+        }
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        input {
+            flex: 1;
+            padding: 14px 18px;
+            font-size: 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 50px;
+            outline: none;
+            transition: all 0.3s;
+        }
+        input:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102,126,234,0.2);
+        }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            color: white;
+            padding: 14px 28px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102,126,234,0.4);
+        }
+        button:active {
+            transform: translateY(0);
+        }
+        .delete {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            padding: 6px 16px;
+            font-size: 12px;
+        }
+        .note {
+            background: #f8f9fa;
+            padding: 15px;
+            margin: 12px 0;
+            border-radius: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.2s;
+            border-left: 4px solid #667eea;
+        }
+        .note:hover {
+            background: #fff;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transform: translateX(5px);
+        }
+        .note-text {
+            flex: 1;
+            font-size: 16px;
+            color: #333;
+            word-break: break-word;
+        }
+        .note-date {
+            font-size: 11px;
+            color: #999;
+            margin-top: 6px;
+        }
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 50px;
+            font-size: 14px;
+            z-index: 1000;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+            animation: slideIn 0.3s ease;
+        }
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        hr {
+            margin: 25px 0;
+            border: none;
+            height: 1px;
+            background: linear-gradient(to right, #e0e0e0, transparent);
+        }
+        .push-buttons {
+            display: flex;
+            gap: 12px;
+            margin-top: 10px;
+        }
+        .push-buttons button {
+            flex: 1;
+            padding: 12px;
+        }
+        .empty-message {
+            text-align: center;
+            color: #999;
+            padding: 40px;
+            font-style: italic;
+        }
+        .badge {
+            display: inline-block;
+            background: #e8eaf6;
+            color: #667eea;
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 20px;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Мои Заметки</h1>
+        <h2>Сохраняй идеи, не забывай важное</h2>
+        
+        <div class="input-group">
+            <input type="text" id="noteInput" placeholder="Например: Купить молоко, позвонить маме...">
+            <button id="addBtn">Добавить</button>
+        </div>
+        
+        <h3>Список заметок <span class="badge" id="notesCount">0</span></h3>
+        <div id="notesList"></div>
+        
+        <hr>
+        
+        <div class="push-buttons">
+            <button id="enablePush">Включить уведомления</button>
+            <button id="disablePush" style="display:none">Отключить уведомления</button>
+        </div>
+        <p style="font-size: 12px; color: #aaa; text-align: center; margin-top: 15px;">
+            Уведомления будут приходить, когда кто-то добавит новую заметку
+        </p>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/app.js"></script>
+</body>
+</html>
