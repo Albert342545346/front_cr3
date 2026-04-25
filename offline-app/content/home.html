@@ -1,0 +1,107 @@
+<!-- Стили для этой страницы -->
+<style>
+    /* Карточка для напоминания */
+    .reminder-card {
+        background: #fff;
+        border: 1px solid #e0e0e0;
+        border-radius: 16px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-end;
+        gap: 1rem;
+        position: relative;
+        overflow: hidden;
+    }
+
+    /* Декоративная полоска слева */
+    .reminder-card::before {
+        content: '';
+        position: absolute;
+        left: 0; top: 0; bottom: 0;
+        width: 6px;
+        background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .reminder-card label {
+        width: 100%;
+        font-weight: 600;
+        color: #444;
+        font-size: 1.1rem;
+        margin-bottom: 0.5rem;
+        padding-left: 1rem;
+    }
+
+    .reminder-input {
+        padding: 0.8rem 1rem;
+        border: 1px solid #ccc;
+        border-radius: 10px;
+        font-size: 1rem;
+        transition: border-color 0.2s;
+        background: #fafafa;
+    }
+
+    .reminder-input:focus {
+        outline: none;
+        border-color: #667eea;
+        background: #fff;
+    }
+
+    /* Красивая кнопка "Добавить с напоминанием" */
+    .btn-reminder-submit {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        padding: 0.8rem 1.5rem;
+        border-radius: 12px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        box-shadow: 0 4px 15px rgba(118, 75, 162, 0.3);
+        transition: transform 0.2s, box-shadow 0.2s;
+        min-width: 150px;
+    }
+
+    .btn-reminder-submit:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(118, 75, 162, 0.5);
+    }
+
+    .btn-reminder-submit:active {
+        transform: translateY(0);
+    }
+
+    
+</style>
+
+<div class="home-content">
+    <!-- Обычная быстрая заметка -->
+    <div style="margin-bottom: 2.5rem;">
+        <h3 class="is-center">⚡ Быстрая заметка</h3>
+        <form id="note-form" class="row is-center" style="margin-top: 1rem;">
+            <input class="col-8" type="text" id="note-input" placeholder="Введите текст заметки..." required>
+            <button class="col-4 button primary" type="submit">Добавить</button>
+        </form>
+    </div>
+
+    <!-- Карточка напоминания (Красивая форма) -->
+    <div class="reminder-card">
+        <label> Запланировать напоминание</label>
+        
+        <input class="col-7" type="text" id="reminder-text" placeholder="О чем напомнить?" class="reminder-input" style="flex: 2;" required>
+        
+        <input class="col-4" type="datetime-local" id="reminder-time" class="reminder-input" style="flex: 1;" required>
+        
+        <!-- Кнопка внутри формы, чтобы работала старая логика app.js -->
+        <form id="reminder-form" class="row is-center" style="margin: 0; padding: 0; background: none; border: none; box-shadow: none;">
+             <!-- Стиль кнопки задан через CSS выше -->
+             <button class="btn-reminder-submit" type="submit">Напомнить</button>
+        </form>
+    </div>
+
+    <!-- Список задач -->
+    <h2 class="is-center" style="margin-top: 3rem;">Список задач</h2>
+    <ul id="notes-list" style="list-style: none; padding: 0; margin-top: 1rem;"></ul>
+</div>
