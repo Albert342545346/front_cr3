@@ -1,54 +1,115 @@
-const CACHE_NAME = 'app-shell-v2';
-const DYNAMIC_CACHE = 'dynamic-content-v1';
+const CACHE_NAME = 'notes-cache-v3'; // 🔥 УВЕЛИЧЕНА ВЕРСИЯ!
+const DYNAMIC_CACHE_NAME = 'dynamic-content-v2'; // 🔥 ТОЖЕ УВЕЛИЧЕНА!
 
-const SHELL_ASSETS = [
-    '/', '/index.html', '/app.js', '/manifest.json',
-    '/icons/favicon-16x16.png', '/icons/favicon-32x32.png',
-    '/icons/favicon-128x128.png', '/icons/favicon-256x256.png', '/icons/favicon-512x512.png'
+const ASSETS = [
+    '/',
+    '/index.html',
+    '/app.js',
+    '/manifest.json',
+    '/icons/favicon.ico',
+    '/icons/favicon-16x16.png',
+    '/icons/favicon-32x32.png',
+    '/icons/favicon-128x128.png',
+    '/icons/favicon-512x512.png'
 ];
 
-self.addEventListener('install', e => {
-    e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(SHELL_ASSETS)).then(() => self.skipWaiting()));
-});
-
-self.addEventListener('activate', e => {
-    e.waitUntil(
-        caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE_NAME && k !== DYNAMIC_CACHE).map(k => caches.delete(k))))
+self.addEventListener('install', event => {
+    console.log('SW: Установка...');
+    event.waitUntil(
+        caches.open(CACHE_NAME)
+            .then(cache => {
+                console.log('SW: Кэширование ресурсов');
+                return cache.addAll(ASSETS);
+            })
+            .then(() => self.skipWaiting())
     );
 });
 
-self.addEventListener('fetch', e => {
-    const url = new URL(e.request.url);
-    if (url.origin !== location.origin) return;
+self.addEventListener('activate', event => {
+    console.log('SW: Активация...');
+    event.waitUntil(
+        caches.keys().then(keys => {
+            return Promise.all(
+                keys.filter(key => key !== CACHE_NAME && key !== DYNAMIC_CACHE_NAME)
+                    .map(key => {
+                        console.log('SW: Удаление старого кэша:', key);
+                        return caches.delete(key);
+                    })
+            );
+        }).then(() => {
+            console.log('SW: Активирован');
+            return self.clients.claim();
+        })
+    );
+});
 
-    // Динамический контент: Network First
+self.addEventListener('fetch', event => {
+    const url = new URL(event.request.url);
+    
+    // Пропускаем CDN и внешние ресурсы
+    if (url.origin !== location.origin) {
+        return;
+    }
+    
+    // Динамический контент (/content/*)
     if (url.pathname.startsWith('/content/')) {
-        e.respondWith(
-            fetch(e.request)
+        event.respondWith(
+            fetch(event.request)
                 .then(res => {
                     const clone = res.clone();
-                    caches.open(DYNAMIC_CACHE).then(c => c.put(e.request, clone));
+                    caches.open(DYNAMIC_CACHE_NAME).then(cache => {
+                        cache.put(event.request, clone);
+                    });
                     return res;
                 })
-                .catch(() => caches.match(e.request).then(cached => cached || caches.match('/content/home.html')))
+                .catch(() => {
+                    return caches.match(event.request)
+                        .then(cached => cached || caches.match('/content/home.html'));
+                })
         );
     } 
-    // Статика (App Shell): Cache First
+    // Статика (Cache First)
     else {
-        e.respondWith(caches.match(e.request).then(res => res || fetch(e.request)));
+        event.respondWith(
+            caches.match(event.request)
+                .then(cached => {
+                    if (cached) {
+                        return cached;
+                    }
+                    return fetch(event.request);
+                })
+        );
     }
 });
 
+// Push уведомления
 self.addEventListener('push', event => {
-    let data = { title: 'Новое уведомление', body: '' };
+    let data = { title: 'Уведомление', body: '', reminderId: null };
     if (event.data) {
-        try { data = event.data.json(); } catch(e) { data.body = event.data.text(); }
+        try { data = event.data.json(); } 
+        catch { data.body = event.data.text(); }
     }
-    const options = {
+    
+    const opts = {
         body: data.body,
         icon: '/icons/favicon-128x128.png',
         badge: '/icons/favicon-48x48.png',
-        tag: 'note-update'
+        data: { reminderId: data.reminderId },
+        actions: []
     };
-    event.waitUntil(self.registration.showNotification(data.title, options));
+    
+    if (data.reminderId) {
+        opts.actions.push({ action: 'snooze', title: '⏰ Отложить 5 мин' });
+    }
+    
+    event.waitUntil(self.registration.showNotification(data.title, opts));
+});
+
+// Обработка клика
+self.addEventListener('notificationclick', event => {
+    event.notification.close();
+    if (event.action === 'snooze') {
+        const id = event.notification.data?.reminderId;
+        if (id) fetch(`/snooze?reminderId=${id}`, { method: 'POST' });
+    }
 });

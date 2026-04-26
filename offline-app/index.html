@@ -4,49 +4,166 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#C9B896">
     <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#4285f4">
+    <link rel="apple-touch-icon" href="/icons/icon-152x152.png">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="apple-touch-icon" href="/icons/favicon-512x512.png">
-    <link rel="icon" href="/icons/favicon-16x16.png" type="image/png">
-    <title>Заметки + WebSocket</title>
+    <title>Заметки (13-18)</title>
+    <link rel="stylesheet" href="https://unpkg.com/chota@latest">
+    <link rel="icon" href="icons/favicon.ico" sizes="16x16" type="image/ico">
     <style>
-        :root { --bg-ivory:#FAF8F0; --card-bg:#FFFFFF; --text-primary:#3E3C33; --text-secondary:#8A8578; --accent:#C9B896; --accent-hover:#B5A382; --border:#E8E2D4; --shadow:0 6px 18px rgba(62,60,51,0.08); --radius:14px; }
-        * { box-sizing:border-box; margin:0; padding:0; }
-        body { font-family:system-ui,sans-serif; background:var(--bg-ivory); color:var(--text-primary); padding:1rem; min-height:100vh; }
-        .shell { max-width:900px; margin:0 auto; background:var(--card-bg); padding:1.5rem; border-radius:var(--radius); box-shadow:var(--shadow); }
-        header { text-align:center; margin-bottom:1rem; } h1 { font-size:1.6rem; margin-bottom:0.5rem; }
-        nav { display:flex; gap:0.5rem; margin-bottom:1.5rem; border-bottom:2px solid var(--border); padding-bottom:0.5rem; }
-        .tab { flex:1; padding:0.7rem; border:none; background:transparent; cursor:pointer; font-size:1rem; border-radius:8px; transition:0.2s; }
-        .tab.active { background:var(--accent); color:#fff; font-weight:600; } .tab:hover:not(.active) { background:var(--border); }
-        form { display:flex; gap:0.5rem; margin-bottom:1rem; }
-        input { flex:1; padding:0.8rem; border:2px solid var(--border); border-radius:10px; background:#FAF9F6; }
-        button.primary { padding:0.8rem 1.2rem; background:var(--accent); color:#fff; border:none; border-radius:10px; cursor:pointer; }
-        ul { list-style:none; padding:0; } li { background:#FAF9F6; padding:0.8rem; margin-bottom:0.5rem; border-radius:8px; border-left:4px solid var(--accent); }
-        .empty { text-align:center; color:var(--text-secondary); margin-top:1.5rem; font-style:italic; }
-        .footer { margin-top:1.5rem; display:flex; gap:0.5rem; justify-content:center; }
-        .btn-push { padding:0.6rem 1rem; border:none; border-radius:8px; cursor:pointer; font-size:0.9rem; }
-        .btn-enable { background:#4CAF50; color:white; } .btn-disable { background:#F44336; color:white; display:none; }
+        :root {
+            --bg-ivory: #FAF8F0;
+            --card-bg: #FFFFFF;
+            --text-primary: #3E3C33;
+            --text-secondary: #8A8578;
+            --accent: #C9B896;
+            --accent-hover: #B5A382;
+            --border: #E8E2D4;
+            --shadow: 0 4px 12px rgba(62, 60, 51, 0.08);
+            --radius: 12px;
+        }
+        
+        body {
+            background-color: var(--bg-ivory);
+            color: var(--text-primary);
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            padding: 0;
+            margin: 0;
+        }
+        
+        header {
+            background: var(--card-bg);
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+            margin-bottom: 2rem;
+        }
+        
+        h1 {
+            text-align: center;
+            margin: 0;
+            font-size: 1.8rem;
+        }
+        
+        .tabs {
+            max-width: 600px;
+            margin: 1.5rem auto 0;
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .tab {
+            flex: 1;
+            padding: 0.7rem;
+            border: none;
+            background: var(--border);
+            cursor: pointer;
+            font-size: 1rem;
+            border-radius: 8px;
+            transition: 0.2s;
+            color: var(--text-secondary);
+        }
+        
+        .tab.active {
+            background: var(--accent);
+            color: #fff;
+            font-weight: 600;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 0 1rem 2rem;
+        }
+        
+        h2 {
+            text-align: center;
+            margin: 1.5rem 0 1rem;
+        }
+        
+        .row {
+            display: flex;
+            gap: 0.8rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+        
+        input {
+            flex: 1;
+            padding: 0.9rem;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            font-size: 1rem;
+            background: #fff;
+            min-width: 200px;
+        }
+        
+        input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+        
+        .button.primary {
+            background: #198754;
+            color: white;
+        }
+        
+        .button.success {
+            background: #28a745;
+            color: white;
+        }
+        
+        .button.error {
+            background: #dc3545;
+            color: white;
+        }
+        
+        #notes-list {
+            list-style: none;
+            padding: 0;
+            margin-top: 1rem;
+        }
+        
+        #notes-list li {
+            background: var(--card-bg);
+            padding: 1rem;
+            margin-bottom: 0.7rem;
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+            border-left: 4px solid var(--accent);
+        }
+        
+        #notes-list li small {
+            display: block;
+            margin-top: 4px;
+            color: #667eea;
+            font-size: 0.85rem;
+        }
+        
+        footer {
+            margin-top: 2rem;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
-    <div class="shell">
-        <header>
-            <h1>📝 Заметки + WebSocket</h1>
-            <p style="color:var(--text-secondary); font-size:0.9rem;">Синхронизация в реальном времени</p>
-        </header>
-        <nav>
-            <button class="tab active" data-page="home">Главная</button>
-            <button class="tab" data-page="about">О приложении</button>
+    <header>
+        <h1>«Заметки» — оффлайн-приложение</h1>
+        <nav class="tabs is-center">
+            <button id="home-btn" class="tab active">Главная</button>
+            <button id="about-btn" class="tab">О приложении</button>
         </nav>
-        <main id="app-content"></main>
-        <footer class="footer">
-            <button id="enable-push" class="btn-push btn-enable">🔔 Включить уведомления</button>
-            <button id="disable-push" class="btn-push btn-disable">🔕 Отключить уведомления</button>
-        </footer>
-    </div>
-    <!-- Клиентская часть Socket.io -->
+    </header>
+
+    <main id="app-content" class="container">
+        <!-- Сюда подгружается контент -->
+    </main>
+
+    <footer>
+        <button id="enable-push" class="button success">🔔 Включить уведомления</button>
+        <button id="disable-push" class="button error" style="display:none;">🔕 Отключить</button>
+    </footer>
+
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     <script src="app.js"></script>
 </body>

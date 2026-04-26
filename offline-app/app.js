@@ -1,207 +1,219 @@
 const contentDiv = document.getElementById('app-content');
-const tabs = document.querySelectorAll('.tab');
+const homeBtn = document.getElementById('home-btn');
+const aboutBtn = document.getElementById('about-btn');
 const socket = io('http://localhost:3001');
 
-// --- Навигация (без изменений) ---
-tabs.forEach(tab => {
-    tab.addEventListener('click', () => {
-        tabs.forEach(t => t.classList.remove('active'));
-        tab.classList.add('active');
-        loadContent(tab.dataset.page);
-    });
-});
+// === НАВИГАЦИЯ ===
+function setActive(btn) {
+    [homeBtn, aboutBtn].forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+}
 
 async function loadContent(page) {
-    contentDiv.innerHTML = '<p style="text-align:center;padding:1rem;">Загрузка...</p>';
     try {
         const res = await fetch(`/content/${page}.html`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         contentDiv.innerHTML = await res.text();
         if (page === 'home') initNotes();
     } catch (err) {
-        contentDiv.innerHTML = '<p style="color:red">Ошибка загрузки</p>';
+        console.error('Ошибка загрузки:', err);
+        contentDiv.innerHTML = '<p class="is-center" style="color:red; padding:2rem;">Ошибка загрузки контента</p>';
     }
 }
 
-// --- Логика заметок (ОБНОВЛЕНО) ---
+homeBtn.onclick = () => { setActive(homeBtn); loadContent('home'); };
+aboutBtn.onclick = () => { setActive(aboutBtn); loadContent('about'); };
+loadContent('home');
+
+// === ЛОГИКА ЗАМЕТОК ===
 function initNotes() {
-    const form = document.getElementById('note-form');
-    const input = document.getElementById('note-input');
-    const reminderForm = document.getElementById('reminder-form');
-    const reminderText = document.getElementById('reminder-text');
-    const reminderTime = document.getElementById('reminder-time');
+    const noteForm = document.getElementById('note-form');
+    const noteInput = document.getElementById('note-input');
+    const rForm = document.getElementById('reminder-form');
+    const rText = document.getElementById('reminder-text');
+    const rTime = document.getElementById('reminder-time');
     const list = document.getElementById('notes-list');
 
-    function loadNotes(){
+    // 🔥 ОТРИСОВКА с кнопками ✏️️
+    function render() {
         const notes = JSON.parse(localStorage.getItem('notes') || '[]');
-        list.innerHTML = notes.map(note => {
-            let reminderInfo = '';
-            if(note.reminder){
-                const date = new Date(note.reminder);
-                reminderInfo = `<br><small style="color:#8A8578">⏰ Напоминание: ${date.toLocaleString()}</small>`;
-            }
-            return `<li class="card" style="margin-bottom: 0.5rem; padding: 0.5rem; display: flex; justify-content: space-between; align-items: center;">
-                <div style="flex: 1;">
-                    ${note.text}${reminderInfo}
+        list.innerHTML = notes.map(n => {
+            const info = n.reminder ? 
+                `<small style="color:#667eea; display:block; margin-top:4px;">⏰ ${new Date(n.reminder).toLocaleString()}</small>` : '';
+            return `
+            <li style="display:flex; justify-content:space-between; align-items:center; padding:1rem; margin-bottom:0.7rem; background:#fff; border-radius:10px; box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+                <div style="flex:1;">
+                    <strong>${n.text}</strong>
+                    ${info}
                 </div>
-                <div style="display: flex; gap: 5px; margin-left: 10px;">
-                    <button class="btn-edit" data-id="${note.id}" style="background: #ffc107; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 14px;">✏️</button>
-                    <button class="btn-delete" data-id="${note.id}" style="background: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 14px;">🗑️</button>
+                <div style="display:flex; gap:8px;">
+                    <button class="btn-edit" data-id="${n.id}" style="background:#ffc107; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:14px;">✏️</button>
+                    <button class="btn-delete" data-id="${n.id}" style="background:#dc3545; color:white; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:14px;">🗑️</button>
                 </div>
             </li>`;
         }).join('');
     }
 
-    function deleteNote(id){
-        if(!confirm('Удалить заметку?')) return;
-        let notes = JSON.parse(localStorage.getItem('notes') || '[]');
-        notes = notes.filter(n => n.id !== id);
-        localStorage.setItem('notes', JSON.stringify(notes));
-        loadNotes();
-    }
-
-    function editNote(id){
-        let notes = JSON.parse(localStorage.getItem('notes') || '[]');
-        const note = notes.find(n => n.id === id);
-        if(!note) return;
-        
-        const newText = prompt('Редактировать заметку:', note.text);
-        if(newText !== null && newText.trim() !== ''){
-            note.text = newText.trim();
-            localStorage.setItem('notes', JSON.stringify(notes));
-            loadNotes();
-        }
-    }
-
-    function addNote(text, reminderTimestamp = null) {
+    // 🔥 ДОБАВЛЕНИЕ
+    function addNote(text, reminder = null) {
         const notes = JSON.parse(localStorage.getItem('notes') || '[]');
-        const newNote = { id: Date.now(), text, reminder: reminderTimestamp };
-        notes.push(newNote);
+        notes.push({ id: Date.now(), text, reminder });
         localStorage.setItem('notes', JSON.stringify(notes));
-        loadNotes();
-
-        if (reminderTimestamp) {
-            socket.emit('newReminder', { id: newNote.id, text: text, reminderTime: reminderTimestamp });
+        render();
+        
+        if (reminder) {
+            socket.emit('newReminder', { id: Date.now(), text, reminderTime: reminder });
         } else {
             socket.emit('newTask', { text, timestamp: Date.now() });
         }
     }
 
-    // Обработка обычной заметки
-    form.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const text = input.value.trim();
-        if (text) {
-            addNote(text);
-            input.value = '';
+    // 🔥 УДАЛЕНИЕ из localStorage
+    function deleteNote(id) {
+        if (!confirm('Удалить эту заметку?')) return;
+        let notes = JSON.parse(localStorage.getItem('notes') || '[]');
+        notes = notes.filter(n => n.id !== id);
+        // Если массив пустой - удаляем ключ полностью
+        if (notes.length === 0) {
+            localStorage.removeItem('notes');
+        } else {
+            localStorage.setItem('notes', JSON.stringify(notes));
         }
-    });
+        render();
+    }
 
-    // Обработка заметки с напоминанием
-    reminderForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const text = reminderText.value.trim();
-        const datetime = reminderTime.value;
-        if (text && datetime) {
-            const timestamp = new Date(datetime).getTime();
-            if (timestamp > Date.now()) {
-                addNote(text, timestamp);
-                reminderText.value = '';
-                reminderTime.value = '';
-            } else {
-                alert('Дата напоминания должна быть в будущем');
-            }
-        }
-    });
-
-    loadNotes();
-
-    // Обработчики кнопок редактирования и удаления
-    list.addEventListener('click', (e) => {
-        const deleteBtn = e.target.closest('.btn-delete');
-        const editBtn = e.target.closest('.btn-edit');
+    // 🔥 РЕДАКТИРОВАНИЕ в localStorage
+    function editNote(id) {
+        let notes = JSON.parse(localStorage.getItem('notes') || '[]');
+        const note = notes.find(n => n.id === id);
+        if (!note) return;
         
-        if(deleteBtn){
-            const id = Number(deleteBtn.dataset.id);
-            deleteNote(id);
+        const newText = prompt('Редактировать заметку:', note.text);
+        if (newText !== null && newText.trim() !== '') {
+            note.text = newText.trim();
+            localStorage.setItem('notes', JSON.stringify(notes));
+            render();
         }
-        if(editBtn){
-            const id = Number(editBtn.dataset.id);
-            editNote(id);
-        }
-    });
+    }
+
+    // Обработчик обычной формы
+    if (noteForm && noteInput) {
+        noteForm.onsubmit = e => {
+            e.preventDefault();
+            if (noteInput.value.trim()) {
+                addNote(noteInput.value.trim());
+                noteInput.value = '';
+            }
+        };
+    }
+
+    // Обработчик формы с напоминанием
+    if (rForm && rText && rTime) {
+        rForm.onsubmit = e => {
+            e.preventDefault();
+            if (rText.value.trim() && rTime.value) {
+                const ts = new Date(rTime.value).getTime();
+                if (ts > Date.now()) {
+                    addNote(rText.value.trim(), ts);
+                    rText.value = '';
+                    rTime.value = '';
+                } else {
+                    alert('Время должно быть в будущем');
+                }
+            }
+        };
+    }
+
+    // 🔥 КНОПКИ ✏️🗑️ - делегирование
+    if (list) {
+        list.onclick = e => {
+            const id = Number(e.target.dataset.id);
+            if (e.target.classList.contains('btn-delete')) {
+                deleteNote(id);
+            }
+            if (e.target.classList.contains('btn-edit')) {
+                editNote(id);
+            }
+        };
+    }
+
+    render();
 }
 
-// --- WebSocket (без изменений) ---
-socket.on('taskAdded', (task) => {
-    const notif = document.createElement('div');
-    notif.textContent = `📥 Новая задача: ${task.text}`;
-    notif.style.cssText = 'position:fixed;top:10px;right:10px;background:#4285f4;color:white;padding:1rem;border-radius:8px;z-index:1000;';
-    document.body.appendChild(notif);
-    setTimeout(() => notif.remove(), 3000);
+// === WebSocket ===
+socket.on('taskAdded', task => {
+    const n = document.createElement('div');
+    n.textContent = `📥 ${task.text}`;
+    n.style.cssText = 'position:fixed;top:10px;right:10px;background:#4285f4;color:#fff;padding:1rem;border-radius:8px;z-index:1000;';
+    document.body.appendChild(n);
+    setTimeout(() => n.remove(), 3000);
 });
 
-// --- Push (без изменений) ---
-function urlBase64ToUint8Array(base64String) {
-    const padding = '='.repeat((4 - base64String.length % 4) % 4);
-    const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
-    const rawData = window.atob(base64);
-    const outputArray = new Uint8Array(rawData.length);
-    for (let i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i);
-    return outputArray;
+// === Push API ===
+const VAPID_KEY = 'BFUuYSDyQ9-JqFsChjlujS6GyFi1RcNUT3akOSULscag2bn0kSVfvkvsLXapxF1GLMblPjAoGuyC4muvD5BKmpA';
+
+function b64ToUint8(b64) {
+    const p = '='.repeat((4 - b64.length % 4) % 4);
+    const r = atob((b64 + p).replace(/-/g, '+').replace(/_/g, '/'));
+    const a = new Uint8Array(r.length);
+    for (let i = 0; i < r.length; i++) a[i] = r.charCodeAt(i);
+    return a;
 }
 
-async function subscribeToPush() {
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
-    try {
-        const registration = await navigator.serviceWorker.ready;
-        const subscription = await registration.pushManager.subscribe({
-            userVisibleOnly: true,
-            applicationServerKey: urlBase64ToUint8Array('BFUuYSDyQ9-JqFsChjlujS6GyFi1RcNUT3akOSULscag2bn0kSVfvkvsLXapxF1GLMblPjAoGuyC4muvD5BKmpA') 
-            // ^^^ ВАШ ПУБЛИЧНЫЙ КЛЮЧ (оставьте тот, что генерировали ранее)
-        });
-        await fetch('http://localhost:3001/subscribe', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(subscription)
-        });
-    } catch (err) { console.error('Push sub error:', err); }
+async function subscribePush() {
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: b64ToUint8(VAPID_KEY)
+    });
+    await fetch('http://localhost:3001/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(sub)
+    });
 }
 
-async function unsubscribeFromPush() {
-    if (!('serviceWorker' in navigator)) return;
-    const registration = await navigator.serviceWorker.ready;
-    const subscription = await registration.pushManager.getSubscription();
-    if (subscription) {
+async function unsubscribePush() {
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.getSubscription();
+    if (sub) {
         await fetch('http://localhost:3001/unsubscribe', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ endpoint: subscription.endpoint })
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ endpoint: sub.endpoint })
         });
-        await subscription.unsubscribe();
+        await sub.unsubscribe();
     }
 }
 
-document.addEventListener('DOMContentLoaded', async () => {
-    const enableBtn = document.getElementById('enable-push');
-    const disableBtn = document.getElementById('disable-push');
-    if (!enableBtn) return;
-    
-    const reg = await navigator.serviceWorker.ready;
-    const sub = await reg.pushManager.getSubscription();
-    if (sub) { enableBtn.style.display = 'none'; disableBtn.style.display = 'inline-block'; }
-
-    enableBtn.addEventListener('click', async () => {
-        const perm = Notification.permission === 'default' ? await Notification.requestPermission() : Notification.permission;
-        if (perm === 'granted') { 
-            await subscribeToPush(); 
-            enableBtn.style.display = 'none'; 
-            disableBtn.style.display = 'inline-block'; 
+// === Регистрация SW + кнопки ===
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', async () => {
+        await navigator.serviceWorker.register('/sw.js');
+        const onBtn = document.getElementById('enable-push');
+        const offBtn = document.getElementById('disable-push');
+        const reg = await navigator.serviceWorker.ready;
+        const sub = await reg.pushManager.getSubscription();
+        
+        if (sub) {
+            onBtn.style.display = 'none';
+            offBtn.style.display = 'inline-block';
         }
-    });
 
-    disableBtn.addEventListener('click', async () => {
-        await unsubscribeFromPush(); 
-        disableBtn.style.display = 'none'; 
-        enableBtn.style.display = 'inline-block'; 
-    });
-});
+        onBtn.onclick = async () => {
+            const perm = Notification.permission === 'default' ? 
+                await Notification.requestPermission() : Notification.permission;
+            if (perm === 'granted') {
+                await subscribePush();
+                onBtn.style.display = 'none';
+                offBtn.style.display = 'inline-block';
+            }
+        };
 
-loadContent('home');
+        offBtn.onclick = async () => {
+            await unsubscribePush();
+            offBtn.style.display = 'none';
+            onBtn.style.display = 'inline-block';
+        };
+    });
+}
