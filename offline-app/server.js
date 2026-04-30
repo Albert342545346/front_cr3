@@ -5,8 +5,24 @@ const webpush = require('web-push');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const path = require('path');
+const os = require('os');
 
-// 🔑 ВАШИ КЛЮЧИ (те же самые, что использовали в практике 16)
+// Получаем локальный IP адрес для вывода в консоль
+function getLocalIP() {
+    const interfaces = os.networkInterfaces();
+    for (let name of Object.keys(interfaces)) {
+        for (let iface of interfaces[name]) {
+            if (iface.family === 'IPv4' && !iface.internal) {
+                return iface.address;
+            }
+        }
+    }
+    return 'localhost';
+}
+
+const LOCAL_IP = getLocalIP();
+
+// 🔑 ВАШИ КЛЮЧИ
 const vapidKeys = {
   publicKey: 'BFUuYSDyQ9-JqFsChjlujS6GyFi1RcNUT3akOSULscag2bn0kSVfvkvsLXapxF1GLMblPjAoGuyC4muvD5BKmpA',
   privateKey: 'tlc8tFltMjCMVSeYBLL_JRKV14TZ0_CbQZ0E2wcuwwM'
@@ -14,21 +30,42 @@ const vapidKeys = {
 webpush.setVapidDetails('mailto:test@test.com', vapidKeys.publicKey, vapidKeys.privateKey);
 
 const app = express();
-app.use(cors());
+
+// Настройка CORS для доступа с других устройств
+app.use(cors({
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, './')));
+
+// Добавляем заголовки для всех ответов
+app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type');
+    next();
+});
 
 let subscriptions = [];
 // Хранилище активных таймеров: ID -> { timeoutId, data }
 const reminders = new Map();
 
 const server = http.createServer(app);
-const io = socketIo(server, { cors: { origin: "*", methods: ["GET", "POST"] } });
+const io = socketIo(server, { 
+    cors: { 
+        origin: "*", 
+        methods: ["GET", "POST"],
+        credentials: false
+    } 
+});
 
 io.on('connection', (socket) => {
     console.log('Клиент подключён:', socket.id);
 
-    // 1. Обычная задача (из практики 16)
+    // 1. Обычная задача
     socket.on('newTask', (task) => {
         io.emit('taskAdded', task);
         const payload = JSON.stringify({ title: 'Новая задача', body: task.text });
@@ -37,12 +74,12 @@ io.on('connection', (socket) => {
         });
     });
 
-    // 2. НОВАЯ ЛОГИКА: Задача с напоминанием
+    // 2. Задача с напоминанием
     socket.on('newReminder', (reminder) => {
         const { id, text, reminderTime } = reminder;
         const delay = reminderTime - Date.now();
 
-        if (delay <= 0) return; // Уже прошло
+        if (delay <= 0) return;
 
         console.log(`Установлен таймер на ${delay} мс для задачи: ${text}`);
 
@@ -58,7 +95,7 @@ io.on('connection', (socket) => {
                 webpush.sendNotification(sub, payload).catch(err => console.error('Push error:', err));
             });
             
-            reminders.delete(id); // Удаляем таймер из памяти
+            reminders.delete(id);
         }, delay);
 
         reminders.set(id, { timeoutId, text, reminderTime });
@@ -69,30 +106,30 @@ io.on('connection', (socket) => {
     });
 });
 
-// Эндпоинты подписки (из практики 16)
+// Эндпоинты подписки
 app.post('/subscribe', (req, res) => {
     subscriptions.push(req.body);
     res.status(201).json({ message: 'Подписка сохранена' });
 });
+
 app.post('/unsubscribe', (req, res) => {
     const { endpoint } = req.body;
     subscriptions = subscriptions.filter(sub => sub.endpoint !== endpoint);
     res.status(200).json({ message: 'Отписка' });
 });
 
-// НОВЫЙ ЭНДПОИНТ: Отложить (Snooze) на 5 минут
+// Эндпоинт: Отложить (Snooze) на 5 минут
 app.post('/snooze', (req, res) => {
     const reminderId = parseInt(req.query.reminderId, 10);
     
     if (!reminders.has(reminderId)) {
-        // Если таймера нет в памяти (сервер перезагружался или время вышло), просто ок
         return res.status(200).json({ message: 'Snoozed (reminder not found)' });
     }
 
     const reminder = reminders.get(reminderId);
-    clearTimeout(reminder.timeoutId); // Останавливаем старый таймер
+    clearTimeout(reminder.timeoutId);
 
-    const newDelay = 5 * 60 * 1000; // 5 минут
+    const newDelay = 5 * 60 * 1000;
     console.log(`Откладываем задачу ID: ${reminderId} на 5 минут`);
 
     const newTimeoutId = setTimeout(() => {
@@ -113,6 +150,9 @@ app.post('/snooze', (req, res) => {
 });
 
 const PORT = 3001;
-server.listen(PORT, () => {
-    console.log(`🚀 Сервер запущен на http://localhost:${PORT}`);
+server.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 Сервер запущен на:`);
+    console.log(`   - Локально: http://localhost:${PORT}`);
+    console.log(`   - В сети: http://${LOCAL_IP}:${PORT}`);
+    console.log(`\n📱 Для подключения с другого устройства используйте IP: ${LOCAL_IP}`);
 });
