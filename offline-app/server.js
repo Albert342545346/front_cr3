@@ -39,6 +39,14 @@ app.use(cors({
 }));
 
 app.use(bodyParser.json());
+
+// ✅ ДОБАВЛЕНО: Обработка favicon.ico ДО static middleware
+app.get('/favicon.ico', (req, res) => {
+    // Отправляем существующий favicon-16x16.png
+    res.sendFile(path.join(__dirname, 'icons', 'favicon-16x16.png'));
+});
+
+// Статические файлы
 app.use(express.static(path.join(__dirname, './')));
 
 // Добавляем заголовки для всех ответов

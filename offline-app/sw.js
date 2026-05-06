@@ -1,11 +1,13 @@
 const CACHE_NAME = 'notes-cache-v4';
 const DYNAMIC_CACHE_NAME = 'dynamic-content-v3';
 
+// ТОЛЬКО ТЕ ИКОНКИ, КОТОРЫЕ ЕСТЬ В MANIFEST
 const ASSETS = [
     '/',
     '/index.html',
     '/app.js',
     '/manifest.json',
+    '/icons/favicon-16x16.png',
     '/icons/favicon-128x128.png',
     '/icons/favicon-256x256.png',
     '/icons/favicon-512x512.png'
@@ -80,7 +82,6 @@ self.addEventListener('fetch', event => {
                     return fetch(event.request);
                 })
                 .catch(() => {
-                    // Если нет в кэше и сеть недоступна
                     if (url.pathname === '/') {
                         return caches.match('/index.html');
                     }
@@ -102,8 +103,8 @@ self.addEventListener('push', event => {
     
     const options = {
         body: data.body,
-        icon: '/icons/favicon-128x128.png',
-        badge: '/icons/favicon-128x128.png',
+        icon: '/icons/favicon-128x128.png',  // Есть в манифесте
+        badge: '/icons/favicon-16x16.png',   // Есть в манифесте
         vibrate: [200, 100, 200],
         data: { 
             reminderId: data.reminderId,

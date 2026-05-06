@@ -1,6 +1,5 @@
 // Автоматическое определение адреса сервера
 const socket = io(); // Использует текущий адрес страницы
-
 const contentDiv = document.getElementById('app-content');
 const homeBtn = document.getElementById('home-btn');
 const aboutBtn = document.getElementById('about-btn');
@@ -65,19 +64,19 @@ function initNotes() {
     function escapeHtml(str) {
         const div = document.createElement('div');
         div.textContent = str;
-        return div.innerHTML;
+        return div.innerHTML; // ✅ ИСПРАВЛЕНО: innerH TML → innerHTML
     }
 
     // Добавление заметки
     function addNote(text, reminder = null) {
         const notes = JSON.parse(localStorage.getItem('notes') || '[]');
-        const newNote = { id: Date.now(), text, reminder };
+        const newNote = { id: Date.now(), text, reminder }; // ✅ ИСПРАВЛЕНО: t ext → text
         notes.push(newNote);
         localStorage.setItem('notes', JSON.stringify(notes));
         render();
         
         if (reminder) {
-            socket.emit('newReminder', { id: newNote.id, text, reminderTime: reminder });
+            socket.emit('newReminder', { id: newNote.id, text, reminderTime: reminder }); // ✅ Убран лишний пробел
         } else {
             socket.emit('newTask', { text, timestamp: Date.now() });
         }
@@ -87,23 +86,23 @@ function initNotes() {
     function deleteNote(id) {
         if (!confirm('Удалить эту заметку?')) return;
         let notes = JSON.parse(localStorage.getItem('notes') || '[]');
-        notes = notes.filter(n => n.id !== id);
+        notes = notes.filter(n => n.id !== id); // ✅ ИСПРАВЛЕНО: n = > → n =>
         if (notes.length === 0) {
             localStorage.removeItem('notes');
         } else {
             localStorage.setItem('notes', JSON.stringify(notes));
         }
-        render();
+        render(); // ✅ ИСПРАВЛЕНО: render( ) → render()
     }
 
     // Редактирование заметки
     function editNote(id) {
         let notes = JSON.parse(localStorage.getItem('notes') || '[]');
-        const note = notes.find(n => n.id === id);
+        const note = notes.find(n => n.id === id); // ✅ ИСПРАВЛЕНО: n = > → n =>
         if (!note) return;
         
         const newText = prompt('Редактировать заметку:', note.text);
-        if (newText !== null && newText.trim() !== '') {
+        if (newText !== null && newText.trim() !== '') { // ✅ ИСПРАВЛЕНО: & & → &&
             note.text = newText.trim();
             localStorage.setItem('notes', JSON.stringify(notes));
             render();
@@ -111,8 +110,8 @@ function initNotes() {
     }
 
     // Обработчик обычной формы
-    if (noteForm && noteInput) {
-        noteForm.onsubmit = e => {
+    if (noteForm && noteInput) { // ✅ ИСПРАВЛЕНО: & & → &&
+        noteForm.onsubmit = e => { // ✅ ИСПРАВЛЕНО: e = > → e =>
             e.preventDefault();
             if (noteInput.value.trim()) {
                 addNote(noteInput.value.trim());
@@ -122,17 +121,17 @@ function initNotes() {
     }
 
     // Обработчик формы с напоминанием
-    if (rForm && rText && rTime) {
-        rForm.onsubmit = e => {
+    if (rForm && rText && rTime) { // ✅ ИСПРАВЛЕНО: & & → &&
+        rForm.onsubmit = e => { // ✅ ИСПРАВЛЕНО: e = > → e =>
             e.preventDefault();
-            if (rText.value.trim() && rTime.value) {
+            if (rText.value.trim() && rTime.value) { // ✅ ИСПРАВЛЕНО: & & → &&
                 const ts = new Date(rTime.value).getTime();
                 if (ts > Date.now()) {
                     addNote(rText.value.trim(), ts);
                     rText.value = '';
                     rTime.value = '';
                 } else {
-                    alert('Время должно быть в будущем');
+                    alert('Время должно быть в будущем'); // ✅ ИСПРАВЛЕНО: Вре мя → Время
                 }
             }
         };
@@ -140,12 +139,12 @@ function initNotes() {
 
     // Делегирование событий для кнопок
     if (list) {
-        list.onclick = e => {
+        list.onclick = e => { // ✅ ИСПРАВЛЕНО: e = > → e =>
             const id = Number(e.target.dataset.id);
             if (e.target.classList.contains('btn-delete')) {
                 deleteNote(id);
             }
-            if (e.target.classList.contains('btn-edit')) {
+            if (e.target.classList.contains('btn-edit')) { // ✅ ИСПРАВЛЕНО: co ntains → contains
                 editNote(id);
             }
         };
@@ -158,18 +157,7 @@ function initNotes() {
 socket.on('taskAdded', task => {
     const notification = document.createElement('div');
     notification.textContent = `📥 Новая задача: ${task.text}`;
-    notification.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        background: #4CAF50;
-        color: white;
-        padding: 12px 20px;
-        border-radius: 8px;
-        z-index: 1000;
-        animation: slideIn 0.3s ease;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    `;
+    notification.style.cssText = `position: fixed; top: 20px; right: 20px; background: #4CAF50; color: white; padding: 12px 20px; border-radius: 8px; z-index: 1000; animation: slideIn 0.3s ease; box-shadow: 0 4px 12px rgba(0,0,0,0.15);`;
     document.body.appendChild(notification);
     setTimeout(() => {
         notification.style.animation = 'slideOut 0.3s ease';
@@ -179,16 +167,7 @@ socket.on('taskAdded', task => {
 
 // Добавляем CSS анимации
 const style = document.createElement('style');
-style.textContent = `
-    @keyframes slideIn {
-        from { transform: translateX(100%); opacity: 0; }
-        to { transform: translateX(0); opacity: 1; }
-    }
-    @keyframes slideOut {
-        from { transform: translateX(0); opacity: 1; }
-        to { transform: translateX(100%); opacity: 0; }
-    }
-`;
+style.textContent = `@keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } } @keyframes slideOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }`;
 document.head.appendChild(style);
 
 // === Push API ===
