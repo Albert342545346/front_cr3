@@ -1,359 +1,147 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <meta name="theme-color" content="#C9B896">
-    <title>Мои Заметки</title>
-    <link rel="manifest" href="/manifest.json">
-    <link rel="apple-touch-icon" href="/icons/favicon-256x256.png">
-    <link rel="apple-touch-icon" href="/icons/favicon-128x128.png">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
-            background: linear-gradient(135deg, #FAF8F0 0%, #f5f0e4 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
-
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 24px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.05);
-            overflow: hidden;
-            transition: transform 0.2s;
-        }
-
-        .container:hover {
-            transform: translateY(-2px);
-        }
-
-        header {
-            background: #C9B896;
-            padding: 24px 20px;
-            text-align: center;
-            position: relative;
-            overflow: hidden;
-        }
-
-        header::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            right: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
-            pointer-events: none;
-        }
-
-        header h1 {
-            color: white;
-            font-size: 1.8rem;
-            font-weight: 600;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            position: relative;
-            z-index: 1;
-        }
-
-        nav {
-            display: flex;
-            background: #f8f5ee;
-            border-bottom: 1px solid #e8e0d0;
-        }
-
-        nav button {
-            flex: 1;
-            padding: 14px;
-            border: none;
-            background: none;
-            cursor: pointer;
-            font-size: 1rem;
-            font-weight: 500;
-            transition: all 0.3s ease;
-            color: #5a4a2a;
-            position: relative;
-        }
-
-        nav button:hover {
-            background: #efe6d8;
-        }
-
-        nav button.active {
-            background: white;
-            color: #C9B896;
-        }
-
-        nav button.active::after {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background: #C9B896;
-        }
-
-        #app-content {
-            padding: 24px;
-        }
-
-        .form-group {
-            margin-bottom: 18px;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-            color: #2c3e50;
-            font-size: 0.9rem;
-        }
-
-        input, textarea {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #e8e0d0;
-            border-radius: 12px;
-            font-size: 15px;
-            transition: all 0.3s;
-            font-family: inherit;
-        }
-
-        input:focus, textarea:focus {
-            outline: none;
-            border-color: #C9B896;
-            box-shadow: 0 0 0 3px rgba(201,184,150,0.1);
-        }
-
-        button[type="submit"] {
-            background: #C9B896;
-            color: white;
-            padding: 12px 24px;
-            border: none;
-            border-radius: 12px;
-            cursor: pointer;
-            font-size: 16px;
-            font-weight: 600;
-            transition: all 0.3s;
-            width: 100%;
-        }
-
-        button[type="submit"]:hover {
-            background: #b8a47a;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(201,184,150,0.3);
-        }
-
-        button[type="submit"]:active {
-            transform: translateY(0);
-        }
-
-        .notes-list {
-            list-style: none;
-            margin-top: 20px;
-        }
-
-        .push-buttons {
-            display: flex;
-            gap: 12px;
-            margin-bottom: 24px;
-        }
-
-        .push-btn {
-            flex: 1;
-            padding: 10px;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 500;
-            transition: all 0.3s;
-        }
-
-        .enable-push {
-            background: #4CAF50;
-            color: white;
-        }
-
-        .enable-push:hover {
-            background: #45a049;
-            transform: translateY(-1px);
-        }
-
-        .disable-push {
-            background: #dc3545;
-            color: white;
-        }
-
-        .disable-push:hover {
-            background: #c82333;
-            transform: translateY(-1px);
-        }
-
-        h2 {
-            margin-bottom: 16px;
-            color: #2c3e50;
-            font-size: 1.4rem;
-            font-weight: 600;
-        }
-
-        hr {
-            margin: 24px 0;
-            border: none;
-            border-top: 2px solid #f0eadc;
-        }
-
-        /* Анимации для уведомлений */
-        @keyframes slideIn {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-
-        @keyframes slideOut {
-            from {
-                transform: translateX(0);
-                opacity: 1;
-            }
-            to {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-        }
-
-        /* Адаптивность */
-        @media (max-width: 600px) {
-            body {
-                padding: 12px;
-            }
-            
-            #app-content {
-                padding: 16px;
-            }
-            
-            header h1 {
-                font-size: 1.5rem;
-            }
-            
-            nav button {
-                padding: 12px;
-                font-size: 0.9rem;
-            }
-            
-            h2 {
-                font-size: 1.2rem;
-            }
-        }
-
-        /* Стиль для пустого списка */
-        .empty-list {
-            text-align: center;
-            padding: 40px;
-            color: #999;
-            background: #faf8f0;
-            border-radius: 12px;
-        }
-
-        /* Стили для элементов заметок */
-        .note-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 1rem;
-            margin-bottom: 0.7rem;
-            background: #fff;
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-            transition: all 0.3s;
-            border: 1px solid #f0eadc;
-        }
-
-        .note-item:hover {
-            transform: translateX(4px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            border-color: #C9B896;
-        }
-
-        .note-content {
-            flex: 1;
-        }
-
-        .note-text {
-            font-weight: 600;
-            color: #2c3e50;
-        }
-
-        .note-reminder {
-            color: #C9B896;
-            display: block;
-            margin-top: 4px;
-            font-size: 0.8rem;
-        }
-
-        .note-buttons {
-            display: flex;
-            gap: 8px;
-        }
-
-        .btn-edit {
-            background: #ffc107;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: all 0.2s;
-        }
-
-        .btn-edit:hover {
-            background: #e0a800;
-            transform: scale(1.05);
-        }
-
-        .btn-delete {
-            background: #dc3545;
-            color: white;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: all 0.2s;
-        }
-
-        .btn-delete:hover {
-            background: #c82333;
-            transform: scale(1.05);
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="/manifest.json">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#C9B896">
+  <link rel="apple-touch-icon" href="/icons/favicon-128x128.png">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  
+  <title>Заметки PWA</title>
+  
+  <!-- Стили -->
+  <link rel="stylesheet" href="https://unpkg.com/chota@latest">
+  <link rel="stylesheet" href="/style.css">
+  <link rel="icon" href="/icons/favicon-128x128.png" type="image/png">
+  
+  <!-- Встроенные стили для быстрого старта -->
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #FFFFF0 0%, #F5F5DC 100%);
+      min-height: 100vh;
+      color: #2C3E50;
+    }
+    header {
+      background: linear-gradient(135deg, #2E7D32 0%, #4CAF50 100%);
+      color: white;
+      padding: 2rem 1rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    }
+    header h1 { text-align: center; margin-bottom: 1.5rem; }
+    .tabs {
+      display: flex;
+      max-width: 800px;
+      margin: 0 auto;
+      background: rgba(255,255,255,0.2);
+      border-radius: 12px;
+      padding: 0.3rem;
+    }
+    .tab {
+      flex: 1;
+      padding: 0.8rem;
+      border: none;
+      background: transparent;
+      color: white;
+      font-size: 1rem;
+      cursor: pointer;
+      border-radius: 8px;
+      transition: all 0.3s;
+    }
+    .tab.active { background: white; color: #2E7D32; }
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 1.5rem 3rem;
+    }
+    form {
+      background: white;
+      padding: 2rem;
+      border-radius: 12px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+      margin-bottom: 2rem;
+    }
+    h2 {
+      text-align: center;
+      margin: 2rem 0 1.5rem;
+      color: #2C3E50;
+    }
+    input[type="text"], input[type="datetime-local"] {
+      width: 100%;
+      padding: 0.9rem;
+      border: 2px solid #E0E0E0;
+      border-radius: 8px;
+      font-size: 1rem;
+      margin-bottom: 1rem;
+    }
+    input:focus { outline: none; border-color: #4CAF50; }
+    .button {
+      padding: 0.9rem 2rem;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      color: white;
+      transition: all 0.3s;
+    }
+    .button.primary { background: #2E7D32; }
+    .button.success { background: #4CAF50; }
+    .button.error { background: #E53935; }
+    .button:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+    .row { display: flex; gap: 1rem; flex-wrap: wrap; }
+    .col-9 { flex: 0 0 75%; }
+    .col-3 { flex: 0 0 25%; }
+    .col-5 { flex: 0 0 41.667%; }
+    .col-4 { flex: 0 0 33.333%; }
+    #notes-list { list-style: none; }
+    #notes-list li {
+      background: white;
+      border-left: 4px solid #2E7D32;
+      border-radius: 8px;
+      padding: 1.2rem;
+      margin-bottom: 1rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    footer {
+      text-align: center;
+      padding: 2rem;
+      margin-top: 3rem;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 -2px 12px rgba(0,0,0,0.08);
+    }
+    .is-center { text-align: center; }
+    .empty-state { text-align: center; padding: 3rem; color: #78909C; }
+    .text-muted { color: #78909C; font-size: 0.85rem; }
+    @media (max-width: 768px) {
+      .col-9, .col-3, .col-5, .col-4 { flex: 0 0 100%; }
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>Мои Заметки</h1>
-        </header>
-        <nav>
-            <button id="home-btn" class="active">Заметки</button>
-            <button id="about-btn"> О нас</button>
-        </nav>
-        <div id="app-content"></div>
-    </div>
+  <header>
+    <h1>📝 Заметки PWA</h1>
+    <nav class="tabs is-center">
+      <button id="home-btn" class="tab active col-6">Главная</button>
+      <button id="about-btn" class="tab col-6">О приложении</button>
+    </nav>
+  </header>
 
-    <script src="/socket.io/socket.io.js"></script>
-    <script src="/app.js"></script>
+  <main id="app-content" class="container"></main>
+
+  <footer class="is-center">
+    <button id="enable-push" class="button success">🔔 Включить уведомления</button>
+    <button id="disable-push" class="button error" style="display:none;">🔕 Отключить уведомления</button>
+  </footer>
+
+  <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+  <script src="/app.js"></script>
 </body>
 </html>
